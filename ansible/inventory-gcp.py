@@ -54,17 +54,15 @@ def get_mig_instances():
         # First, set up SSH keys
         ssh_key_path = setup_ssh_keys()
         
-        # Get instances from MIG
+        # Get instances from MIG with external IPs directly
         cmd = [
-            "gcloud", "compute", "instance-groups", "list-instances", 
-            "php-mig", "--region=us-central1", "--format=json"
+            "gcloud", "compute", "instances", "list",
+            "--filter=name:php-instance-*", 
+            "--format=value(EXTERNAL_IP)"
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         
-        if result.returncode != 0:
-            return {"php_servers": {"hosts": []}}
-        
-        instances = json.loads(result.stdout)
+        print(f"DEBUG: Found IPs: {result.stdout}", file=sys.stderr)
         
         inventory = {
             "php_servers": {
@@ -78,21 +76,14 @@ def get_mig_instances():
             }
         }
         
-        # Get external IPs for each instance
-        for instance in instances:
-            instance_name = instance["instance"].split("/")[-1]
-            
-            ip_cmd = [
-                "gcloud", "compute", "instances", "describe", instance_name,
-                "--zone=us-central1-f", 
-                "--format=value(networkInterfaces[0].accessConfigs[0].natIP)"
-            ]
-            ip_result = subprocess.run(ip_cmd, capture_output=True, text=True, timeout=10)
-            
-            if ip_result.returncode == 0 and ip_result.stdout.strip():
-                external_ip = ip_result.stdout.strip()
-                inventory["php_servers"]["hosts"].append(external_ip)
+        # Add IPs directly
+        ips = result.stdout.strip().split('\n')
+        for ip in ips:
+            if ip.strip():
+                inventory["php_servers"]["hosts"].append(ip.strip())
+                print(f"DEBUG: Added host: {ip.strip()}", file=sys.stderr)
         
+        print(f"DEBUG: Final hosts: {inventory['php_servers']['hosts']}", file=sys.stderr)
         return inventory
         
     except Exception as e:
