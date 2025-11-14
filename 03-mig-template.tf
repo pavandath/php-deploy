@@ -11,24 +11,7 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
 
   metadata = {
     enable-oslogin = "TRUE"
-    startup-script = <<-EOF
-  #!/bin/bash
-  # Debug script
-  echo "=== Startup script started ===" > /var/log/startup-debug.log
-  date >> /var/log/startup-debug.log
-  
-  # Install Docker
-  apt update -y 2>&1 >> /var/log/startup-debug.log
-  apt install docker.io -y 2>&1 >> /var/log/startup-debug.log
-  systemctl enable docker 2>&1 >> /var/log/startup-debug.log
-  systemctl start docker 2>&1 >> /var/log/startup-debug.log
-  
-  echo "Docker installed" >> /var/log/startup-debug.log
-  
-  # Try to run container
-  docker run hello-world 2>&1 >> /var/log/startup-debug.log
-  echo "=== Startup script completed ===" >> /var/log/startup-debug.log
-EOF
+    startup-script = file("${path.module}/startup-script.sh")
   }
 
   service_account {
@@ -43,7 +26,5 @@ EOF
 
   tags = ["http-server"]
 
-  lifecycle {
-    create_before_destroy = true
-  }
+ 
 }
