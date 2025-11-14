@@ -1,41 +1,37 @@
 ---
 - name: Deploy PHP Application on MIG
   hosts: php_servers
+  connection: local
   become: yes
   
   tasks:
     - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
-        update_cache: yes
-
-    - name: Start and enable Docker service
-      systemd:
-        name: docker
-        state: started
-        enabled: yes
+      shell: |
+        gcloud compute ssh {{ inventory_hostname }} --zone=us-central1-f --command="
+          sudo apt-get update -y
+          sudo apt-get install -y docker.io
+          sudo systemctl enable docker
+          sudo systemctl start docker
+        "
 
     - name: Install gcloud SDK for Docker auth
       shell: |
-        echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee /etc/apt/sources.list.d/google-cloud-sdk.list
-        apt-get install -y apt-transport-https ca-certificates gnupg
-        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-        apt-get update && apt-get install -y google-cloud-sdk
+        gcloud compute ssh {{ inventory_hostname }} --zone=us-central1-f --command="
+          echo 'deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main' | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+          sudo apt-get install -y apt-transport-https ca-certificates gnupg
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+          sudo apt-get update && sudo apt-get install -y google-cloud-sdk
+        "
 
     - name: Authenticate Docker with Artifact Registry
-      shell: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+      shell: |
+        gcloud compute ssh {{ inventory_hostname }} --zone=us-central1-f --command="
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+        "
 
-    - name: Pull PHP application image
-      docker_image:
-        name: us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
-        source: pull
-
-    - name: Run PHP application container
-      docker_container:
-        name: php-app
-        image: us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
-        state: started
-        restart_policy: unless-stopped
-        ports:
-          - "80:80"
+    - name: Pull and run PHP application container
+      shell: |
+        gcloud compute ssh {{ inventory_hostname }} --zone=us-central1-f --command="
+          sudo docker pull us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
+          sudo docker run -d --name php-app -p 80:80 --restart unless-stopped us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
+        "
