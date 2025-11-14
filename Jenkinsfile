@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        # This will make Terraform skip creating new service accounts
+       
         TF_VAR_use_existing_service_account = "true"
         TF_VAR_existing_service_account = "terraform-srvc@siva-477505.iam.gserviceaccount.com"
     }
