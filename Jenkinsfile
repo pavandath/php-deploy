@@ -10,14 +10,20 @@ pipeline {
                         git clone https://github.com/pavandath/php-deploy.git
                         cd php-deploy
                         
+                        # Download and setup Terraform
+                        wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
+                        busybox unzip -o terraform_1.5.7_linux_amd64.zip
+                        chmod +x terraform
+                        rm terraform_1.5.7_linux_amd64.zip
+                        
                         # Clear any cached state
                         rm -rf .terraform .terraform.lock.hcl
                         
                         # Use environment variable for Terraform
                         export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
                         
-                        terraform init
-                        terraform apply -auto-approve
+                        ./terraform init
+                        ./terraform apply -auto-approve
                     '''
                 }
             }
@@ -31,7 +37,7 @@ pipeline {
                         export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
                         
                         # Get the Ansible master IP from Terraform output
-                        ANSIBLE_MASTER_IP=$(terraform output -raw ansible_master_ip)
+                        ANSIBLE_MASTER_IP=$(./terraform output -raw ansible_master_ip)
                         echo "Ansible Master IP: $ANSIBLE_MASTER_IP"
                         
                         # Wait for SSH to be available
@@ -53,14 +59,14 @@ pipeline {
                         sh '''
                             cd php-deploy
                             export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
-                            ANSIBLE_MASTER_IP=$(terraform output -raw ansible_master_ip)
+                            ANSIBLE_MASTER_IP=$(./terraform output -raw ansible_master_ip)
                             
                             echo "Deploying to Ansible Master: $ANSIBLE_MASTER_IP"
                             
                             # Copy Ansible files to the Ansible master
                             scp -o StrictHostKeyChecking=no -r ansible/ ubuntu@${ANSIBLE_MASTER_IP}:~/
                             
-                            # Execute Ansible playbook (EXACTLY as you specified)
+                            # Execute Ansible playbook
                             ssh -o StrictHostKeyChecking=no ubuntu@${ANSIBLE_MASTER_IP} '
                                 cd ansible
                                 chmod +x inventory-gcp.py
