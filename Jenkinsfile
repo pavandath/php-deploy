@@ -13,7 +13,7 @@ pipeline {
             steps {
                 sh '''
             
-                terraform init -upgrade
+                terraform init 
                 '''
             }
         }
