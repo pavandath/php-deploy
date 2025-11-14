@@ -19,8 +19,8 @@ pipeline {
                         
                         ./terraform init
                         
-                        # Import the existing service account into Terraform state
-                        ./terraform import google_service_account.instance_sa "projects/siva-477505/serviceAccounts/php-instance@siva-477505.iam.gserviceaccount.com"
+                        # Try to import, if it fails continue anyway
+                        ./terraform import google_service_account.instance_sa "projects/siva-477505/serviceAccounts/php-instance@siva-477505.iam.gserviceaccount.com" || echo "Import may have failed, continuing..."
                         
                         ./terraform apply -auto-approve
                     '''
