@@ -7,7 +7,7 @@
   tasks:
     - name: Install Docker
       shell: |
-        gcloud compute ssh {{ inventory_hostname }} --zone=us-central1-f --command="
+        gcloud compute ssh {{ inventory_hostname }} --zone={{ hostvars[inventory_hostname].zone }} --command="
           sudo apt-get update -y
           sudo apt-get install -y docker.io
           sudo systemctl enable docker
@@ -16,7 +16,7 @@
 
     - name: Install gcloud SDK for Docker auth
       shell: |
-        gcloud compute ssh {{ inventory_hostname }} --zone=us-central1-f --command="
+        gcloud compute ssh {{ inventory_hostname }} --zone={{ hostvars[inventory_hostname].zone }} --command="
           echo 'deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main' | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
           sudo apt-get install -y apt-transport-https ca-certificates gnupg
           curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
@@ -25,13 +25,13 @@
 
     - name: Authenticate Docker with Artifact Registry
       shell: |
-        gcloud compute ssh {{ inventory_hostname }} --zone=us-central1-f --command="
+        gcloud compute ssh {{ inventory_hostname }} --zone={{ hostvars[inventory_hostname].zone }} --command="
           gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
         "
 
     - name: Pull and run PHP application container
       shell: |
-        gcloud compute ssh {{ inventory_hostname }} --zone=us-central1-f --command="
+        gcloud compute ssh {{ inventory_hostname }} --zone={{ hostvars[inventory_hostname].zone }} --command="
           sudo docker pull us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
           sudo docker run -d --name php-app -p 80:80 --restart unless-stopped us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
         "
