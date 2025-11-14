@@ -1,56 +1,36 @@
 pipeline {
     agent any
 
+    environment {
+        # This will make Terraform skip creating new service accounts
+        TF_VAR_use_existing_service_account = "true"
+        TF_VAR_existing_service_account = "terraform-srvc@siva-477505.iam.gserviceaccount.com"
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                sh 'rm -rf php-deploy || true'
                 checkout scm
             }
         }
         
-        stage('Download Terraform') {
+        stage('Setup Terraform') {
             steps {
                 sh '''
-                    # Download and setup Terraform
                     wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
                     busybox unzip -o terraform_1.5.7_linux_amd64.zip
                     chmod +x terraform
-                    ./terraform --version
                     rm terraform_1.5.7_linux_amd64.zip
                 '''
             }
         }
         
-        stage('Terraform Setup') {
-            steps {
-                sh './terraform init'
-            }
-        }
-        
         stage('Terraform Apply') {
             steps {
-                sh './terraform apply -auto-approve'
-            }
-        }
-        
-        stage('Deploy Application') {
-            steps {
-                script {
-                    sshagent(['ansible-master-ssh-key']) {
-                        sh """
-                        # Copy from ansible/ folder in workspace
-                        scp -o StrictHostKeyChecking=no ./ansible/inventory-gcp.py ubuntu@${ANSIBLE_MASTER_IP}:~/
-                        scp -o StrictHostKeyChecking=no ./ansible/deploy-php.yml ubuntu@${ANSIBLE_MASTER_IP}:~/
-                        
-                        # Execute deployment
-                        ssh -o StrictHostKeyChecking=no ubuntu@${ANSIBLE_MASTER_IP} '
-                            chmod +x inventory-gcp.py
-                            ansible-playbook -i inventory-gcp.py deploy-php.yml
-                        '
-                        """
-                    }
-                }
+                sh '''
+                    ./terraform init
+                    ./terraform apply -auto-approve
+                '''
             }
         }
     }
