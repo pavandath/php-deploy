@@ -31,15 +31,15 @@ pipeline {
             cd php-deploy
             export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
             
-           
-                su ansible -c "
-                cd /home/sivapk188/workspace/php-deploy/ansible
+            ZONE=$(gcloud compute instances list --filter="name:ansible-master" --format="value(ZONE)" --project=siva-477505)
+            
+            gcloud compute scp --recurse ansible/ ansible-master:~/ --zone=${ZONE} --project=siva-477505
+            
+            gcloud compute ssh ansible-master --zone=${ZONE} --project=siva-477505 --command='
+                cd ~/ansible
                 chmod +x inventory-gcp.py
-                export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
                 ansible-playbook -i inventory-gcp.py deploy-php.yml
-            " <<< "1234"
-
-           
+            '
         '''
     }
 }
