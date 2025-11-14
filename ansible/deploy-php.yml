@@ -1,70 +1,41 @@
 ---
 - name: Deploy PHP Application on MIG
   hosts: php_servers
-  connection: local
+  become: yes
   
   tasks:
-    - name: Install Docker as root
+    - name: Install Docker
       apt:
         name: docker.io
         state: present
         update_cache: yes
-      become: yes
-      delegate_to: "{{ inventory_hostname }}"
 
-    - name: Start and enable Docker service as root
+    - name: Start and enable Docker service
       systemd:
         name: docker
         state: started
         enabled: yes
-      become: yes
-      delegate_to: "{{ inventory_hostname }}"
 
-    - name: Stop and remove existing php-app container as root
+    - name: Stop and remove existing php-app container
       shell: |
         docker stop php-app || true
         docker rm php-app || true
-      become: yes
-      delegate_to: "{{ inventory_hostname }}"
 
-    - name: Configure Docker with Artifact Registry as root
+    - name: Configure Docker with Artifact Registry
       command: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
-      become: yes
-      delegate_to: "{{ inventory_hostname }}"
 
-    - name: Pull PHP application image as root
+    - name: Pull PHP application image
       shell: docker pull us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
-      become: yes
-      delegate_to: "{{ inventory_hostname }}"
 
-    - name: Run PHP application container as root
+    - name: Run PHP application container
       shell: |
         docker run -d \
           --name php-app \
           --restart unless-stopped \
           -p 80:80 \
           us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
-      become: yes
-      delegate_to: "{{ inventory_hostname }}"
 
-    - name: Wait for container to start
-      pause:
-        seconds: 5
-
-    - name: Verify container is running as root
+    - name: Verify container is running
       shell: |
-        echo "=== Container Status ==="
         docker ps
-        echo "=== Container Logs ==="
         docker logs php-app
-        echo "=== Port Check ==="
-        docker port php-app
-        echo "=== Process Check ==="
-        docker exec php-app ps aux
-      become: yes
-      delegate_to: "{{ inventory_hostname }}"
-      register: verification
-
-    - name: Show verification results
-      debug:
-        var: verification.stdout
