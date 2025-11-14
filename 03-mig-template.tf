@@ -13,7 +13,7 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
     enable-oslogin = "TRUE"
 
   }
-    startup-script = file("${path.module}/startup-script.sh")
+    metadata_startup_script = file("${path.module}/startup-script.sh")
 
   service_account {
     email = google_service_account.instance_sa.email
