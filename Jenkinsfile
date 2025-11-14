@@ -19,8 +19,8 @@ pipeline {
                         # Use environment variable for Terraform
                         export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
                         
-                        ./terraform init
-                        ./terraform apply -auto-approve
+                        ./terraform destroy --auto-approve
+                        
                     '''
                 }
             }
