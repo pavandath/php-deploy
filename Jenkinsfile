@@ -25,7 +25,7 @@ pipeline {
             }
         }
         
-        stage('Ansible Deploy') {
+       stage('Ansible Deploy') {
     steps {
         sh '''
             cd php-deploy
@@ -38,7 +38,6 @@ pipeline {
             gcloud compute ssh ansible-master --zone=${ZONE} --project=siva-477505 --command='
                 cd ~/ansible
                 chmod +x inventory-gcp.py
-                # Remove the gcloud SSH wrapper - use direct SSH
                 ansible-playbook -i inventory-gcp.py deploy-php.yml
             '
         '''
