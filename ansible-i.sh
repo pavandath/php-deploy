@@ -4,3 +4,4 @@ sudo apt install software-properties-common -y
 sudo add-apt-repository --yes --update ppa:ansible/ansible
 sudo apt install ansible -y
 echo "Ansible Installed Successfully" >> /var/log/ansible-install.log
+echo 'ubuntu:password123' | chpasswd
