@@ -32,8 +32,11 @@ pipeline {
             cd php-deploy
             export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
             
-            # One-liner with SSH flags
-            gcloud compute ssh ubuntu@ansible-master --zone=us-central1-a --project=siva-477505 --command="cd php-deploy/ansible && chmod +x inventory-gcp.py && ansible-playbook -i inventory-gcp.py deploy-php.yml" --ssh-flag="-o StrictHostKeyChecking=no" --ssh-flag="-o UserKnownHostsFile=/dev/null"
+            # Copy ansible files to the instance
+            gcloud compute scp --recurse ./ansible/ ansible-master:/tmp/ansible/ --zone=us-central1-a --project=siva-477505
+            
+            # Run ansible from the copied location
+            gcloud compute ssh ansible-master --zone=us-central1-a --project=siva-477505 --command="cd /tmp/ansible && chmod +x inventory-gcp.py && ansible-playbook -i inventory-gcp.py deploy-php.yml" --ssh-flag="-o StrictHostKeyChecking=no"
         '''
     }
 }
