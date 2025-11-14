@@ -2,32 +2,23 @@
 - name: Deploy PHP Application on MIG
   hosts: php_servers
   connection: local
-  become: yes
   
   tasks:
-    - name: Install Docker
+    - name: Install Docker as root
       apt:
         name: docker.io
         state: present
         update_cache: yes
+      become: yes
       delegate_to: "{{ inventory_hostname }}"
 
-    - name: Start and enable Docker service
+    - name: Start and enable Docker service as root
       systemd:
         name: docker
         state: started
         enabled: yes
-      delegate_to: "{{ inventory_hostname }}"
-
-    - name: Check running containers as root
-      shell: docker ps -a
       become: yes
       delegate_to: "{{ inventory_hostname }}"
-      register: existing_containers
-
-    - name: Debug existing containers
-      debug:
-        var: existing_containers.stdout
 
     - name: Stop and remove existing php-app container as root
       shell: |
@@ -42,39 +33,38 @@
       delegate_to: "{{ inventory_hostname }}"
 
     - name: Pull PHP application image as root
-      docker_image:
-        name: us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
-        source: pull
+      shell: docker pull us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
       become: yes
       delegate_to: "{{ inventory_hostname }}"
 
     - name: Run PHP application container as root
-      docker_container:
-        name: php-app
-        image: us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
-        state: started
-        restart_policy: unless-stopped
-        ports:
-          - "80:80"
+      shell: |
+        docker run -d \
+          --name php-app \
+          --restart unless-stopped \
+          -p 80:80 \
+          us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
       become: yes
       delegate_to: "{{ inventory_hostname }}"
 
-    - name: Check if container is running as root
-      shell: docker ps
+    - name: Wait for container to start
+      pause:
+        seconds: 5
+
+    - name: Verify container is running as root
+      shell: |
+        echo "=== Container Status ==="
+        docker ps
+        echo "=== Container Logs ==="
+        docker logs php-app
+        echo "=== Port Check ==="
+        docker port php-app
+        echo "=== Process Check ==="
+        docker exec php-app ps aux
       become: yes
       delegate_to: "{{ inventory_hostname }}"
-      register: final_status
+      register: verification
 
-    - name: Debug final container status
+    - name: Show verification results
       debug:
-        var: final_status.stdout
-
-    - name: Check container logs as root
-      shell: docker logs php-app
-      become: yes
-      delegate_to: "{{ inventory_hostname }}"
-      register: container_logs
-
-    - name: Debug container logs
-      debug:
-        var: container_logs.stdout
+        var: verification.stdout
