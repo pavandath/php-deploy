@@ -4,7 +4,10 @@
 *.tfstate.*
 crash.log
 crash.*.log
+<<<<<<< HEAD
 
+=======
+>>>>>>> ae5536f1558a6ac165e14bbb7659d819b3939ff4
 override.tf
 override.tf.json
 *_override.tf
