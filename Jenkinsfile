@@ -33,7 +33,7 @@ pipeline {
             
             # Switch to ansible user and run playbook
             sudo -u ansible bash -c "
-                cd /path/to/php-deploy/ansible
+                cd /php-deploy/ansible
                 chmod +x inventory-gcp.py
                 ansible-playbook -i inventory-gcp.py deploy-php.yml
             "
