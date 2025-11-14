@@ -22,19 +22,23 @@ pipeline {
                     ./terraform init
                     ./terraform apply -auto-approve
                 '''
+                stash name: 'ansible', includes: 'php-deploy/anisible/*'
             }
         }
         stage('Ansible Deploy') {
             steps {
                 sshagent(['ansible-master-ssh-key']) {
+                    mkdir -p ansible
+                    dir('ansible') {
+                        unstash 'ansible'
+                    }
                     sh '''
-                        cd php-deploy
+                        cd ansible
+                
                         export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
                         ANSIBLE_MASTER_IP=$(gcloud compute instances list --filter="name:ansible-master" --format="value(EXTERNAL_IP)" --project=siva-477505)
                         
                         ssh -o StrictHostKeyChecking=no ubuntu@${ANSIBLE_MASTER_IP} '
-                            hostname 
-                            cd php-deploy/ansible
                             chmod +x inventory-gcp.py
                             ansible-playbook -i inventory-gcp.py deploy-php.yml
                         '
