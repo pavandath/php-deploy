@@ -11,9 +11,29 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
 
   metadata = {
     enable-oslogin = "TRUE"
-
+    startup-script = <<-EOF
+      #!/bin/bash
+      # Install Docker (if not already installed)
+      if ! command -v docker &> /dev/null; then
+        apt update -y
+        apt install docker.io -y
+        systemctl enable docker
+        systemctl start docker
+      fi
+      
+      # Authenticate Docker with Artifact Registry
+      gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+      
+      # Stop and remove existing container if it exists
+      docker stop php-app || true
+      docker rm php-app || true
+      
+      # Pull and run PHP application container
+      docker run -d --name php-app -p 80:80 --restart unless-stopped us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
+      
+      echo "PHP application deployed successfully"
+    EOF
   }
-    metadata_startup_script = file("${path.module}/startup-script.sh")
 
   service_account {
     email = google_service_account.instance_sa.email
@@ -26,9 +46,8 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
   }
 
   tags = ["http-server"]
-lifecycle {
+
+  lifecycle {
     create_before_destroy = true
   }
-
- 
 }
