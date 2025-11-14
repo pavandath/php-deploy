@@ -10,7 +10,7 @@ pipeline {
             steps {
                 sh '''
                     rm -rf php-deploy
-                    git clone https://github.com/pavandath/php-deploy.git
+                    git clone https://github.com/pavandath/php-deploy.git || true
                     cd php-deploy
                     
                     wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
