@@ -1,7 +1,6 @@
 #!/bin/bash
-# gcloud-ssh.sh - SSH wrapper that uses gcloud compute ssh
+# gcloud-ssh.sh - Minimal SSH wrapper
 
-# Extract IP from arguments
 IP="$1"
 shift
 
@@ -10,5 +9,12 @@ INSTANCE_INFO=$(gcloud compute instances list --filter="networkInterfaces[0].acc
 INSTANCE_NAME=$(echo "$INSTANCE_INFO" | cut -d' ' -f1)
 ZONE=$(echo "$INSTANCE_INFO" | cut -d' ' -f2)
 
-# Use gcloud compute ssh with all remaining arguments
-exec gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --ssh-flag="$@"
+# Extract the actual command (last argument)
+for arg in "$@"; do
+    if [[ $arg != -* ]]; then
+        COMMAND="$arg"
+    fi
+done
+
+# Execute via gcloud compute ssh
+gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="$COMMAND"
