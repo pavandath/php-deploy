@@ -18,6 +18,10 @@ pipeline {
                         gcloud config set project siva-477505
                         
                         ./terraform init
+                        
+                        # Import the existing service account into Terraform state
+                        ./terraform import google_service_account.instance_sa "projects/siva-477505/serviceAccounts/php-instance@siva-477505.iam.gserviceaccount.com"
+                        
                         ./terraform apply -auto-approve
                     '''
                 }
