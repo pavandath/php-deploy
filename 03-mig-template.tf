@@ -9,12 +9,17 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
     disk_size_gb = 10
   }
 
-  # Enable OS Login for SSH access
   metadata = {
     enable-oslogin = "TRUE"
+    startup-script = <<-EOF
+      #!/bin/bash
+      # Set password for ubuntu user and enable password authentication
+      echo 'ubuntu:password123' | chpasswd
+      sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+      systemctl restart sshd
+    EOF
   }
 
-  # Use the same service account as Ansible master
   service_account {
     email = google_service_account.instance_sa.email
     scopes = ["https://www.googleapis.com/auth/cloud-platform"]
