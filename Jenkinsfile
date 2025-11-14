@@ -5,6 +5,7 @@ pipeline {
         stage('Terraform Deploy') {
             steps {
                 sh '''
+                    rm -rf php-deploy || true
                     Clone repo
                     git clone https://github.com/pavandath/php-deploy.git
                     cd php-deploy
