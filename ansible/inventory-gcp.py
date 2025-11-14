@@ -21,7 +21,8 @@ def get_mig_instances():
                     "ansible_become": "yes",
                     "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
                     "ansible_ssh_pass": "password123",
-                    "ansible_become_pass": "password123"
+                    "ansible_become_pass": "password123",
+                    "ansible_ssh_executable": "sshpass ssh"  # ← Add this line
                 }
             }
         }
