@@ -25,23 +25,7 @@ pipeline {
             }
         }
         
-       stage('Ansible Deploy') {
-    steps {
-        sh '''
-            cd php-deploy
-            export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
-            
-            ZONE=$(gcloud compute instances list --filter="name:ansible-master" --format="value(ZONE)" --project=siva-477505)
-            
-            gcloud compute scp --recurse ansible/ ansible-master:~/ --zone=${ZONE} --project=siva-477505
-            
-            gcloud compute ssh ansible-master --zone=${ZONE} --project=siva-477505 --command='
-                cd ~/ansible
-                ansible-playbook deploy-php.yml
-            '
-        '''
-    }
-}
+       
 
     }
 }
