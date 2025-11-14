@@ -16,8 +16,9 @@ def get_mig_instances():
             "php_servers": {
                 "hosts": [],
                 "vars": {
-                    "ansible_user": "ubuntu",  # or root depending on your setup
-                    "ansible_become": "yes"
+                    "ansible_user": "ubuntu",
+                    "ansible_become": "yes",
+                    "ansible_remote_tmp": "/tmp/.ansible"
                 }
             }
         }
