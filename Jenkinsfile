@@ -32,7 +32,7 @@ pipeline {
             export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
             
            
-               sudo -u ansible bash -c "
+                echo "1234" | sudo -S -u ansible bash -c "
                 cd /home/ansible/ansible
                 chmod +x inventory-gcp.py
                 export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
