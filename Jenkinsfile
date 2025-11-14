@@ -3,8 +3,6 @@ pipeline {
     
     environment {
         GCP_KEY = credentials('terraform')
-        GCP_PROJECT = 'siva-477505'
-        TF_VERSION = '1.5.7'
     }
 
     stages {
@@ -28,25 +26,23 @@ pipeline {
         }
         
         stage('Ansible Deploy') {
-            steps {
-                sshagent(['ansible-master-ssh-key']) {
-                    sh '''
-                        cd php-deploy
-                        export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
-                        ANSIBLE_MASTER_IP=$(gcloud compute instances list --filter="name:ansible-master" --format="value(EXTERNAL_IP)" --project=siva-477505)
-                        
-                        # Copy the entire ansible directory to Ansible master
-                        scp -o StrictHostKeyChecking=no -r ansible/ ubuntu@${ANSIBLE_MASTER_IP}:~/
-                        
-                        # Now SSH and run ansible-playbook from the copied directory
-                        ssh -o StrictHostKeyChecking=no ubuntu@${ANSIBLE_MASTER_IP} '
-                            cd ~/ansible
-                            chmod +x inventory-gcp.py
-                            ansible-playbook -i inventory-gcp.py deploy-php.yml
-                        '
-                    '''
-                }
-            }
-        }
+    steps {
+        sh '''
+            cd php-deploy
+            export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
+            ANSIBLE_MASTER_IP=$(gcloud compute instances list --filter="name:ansible-master" --format="value(EXTERNAL_IP)" --project=siva-477505)
+            
+            # Copy files
+            scp -o StrictHostKeyChecking=no -r ansible/ ansible-master.${ZONE}.c.siva-477505.internal:~/
+            
+            # SSH and run
+            ssh -o StrictHostKeyChecking=no ansible-master.${ZONE}.c.siva-477505.internal '
+                cd ~/ansible
+                chmod +x inventory-gcp.py
+                ansible-playbook -i inventory-gcp.py deploy-php.yml
+            '
+        '''
+    }
+}
     }
 }
