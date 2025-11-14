@@ -25,6 +25,9 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
   }
 
   tags = ["http-server"]
+lifecycle {
+    create_before_destroy = true
+  }
 
  
 }
