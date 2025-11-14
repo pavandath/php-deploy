@@ -16,18 +16,11 @@ pipeline {
                         chmod +x terraform
                         rm terraform_1.5.7_linux_amd64.zip
                         
-                        # Clear any cached state
-                        rm -rf .terraform .terraform.lock.hcl
-                        
                         # Use environment variable for Terraform
                         export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
                         
+                        # Just run Terraform - let it handle existing state
                         ./terraform init
-                        
-                        # Try to import existing resources (skip if they don't exist)
-                        ./terraform import google_compute_health_check.php_health_check projects/siva-477505/global/healthChecks/php-health-check 2>/dev/null || echo "Health check may not exist, will create if needed"
-                        ./terraform import google_service_account.instance_sa projects/siva-477505/serviceAccounts/php-instance@siva-477505.iam.gserviceaccount.com 2>/dev/null || echo "Service account may not exist, will create if needed"
-                        
                         ./terraform apply -auto-approve
                     '''
                 }
