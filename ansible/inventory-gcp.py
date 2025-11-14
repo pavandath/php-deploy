@@ -17,10 +17,10 @@ def get_mig_instances():
             "php_servers": {
                 "hosts": [],
                 "vars": {
-                    "ansible_user": "root",
-                    "ansible_ssh_pass": "password123",
+                    "ansible_user": "ubuntu",
                     "ansible_become": "yes",
-                    "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=password -o PubkeyAuthentication=no"
+                    "ansible_become_pass": "password123",
+                    "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
                 }
             }
         }
