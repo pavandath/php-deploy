@@ -32,12 +32,13 @@ pipeline {
             export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
             
            
-                echo "1234" | sudo -S -u ansible bash -c "
-                cd /home/ansible/ansible
+                su ansible -c "
+                cd /home/sivapk188/workspace/php-deploy/ansible
                 chmod +x inventory-gcp.py
                 export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
                 ansible-playbook -i inventory-gcp.py deploy-php.yml
-            "
+            " <<< "1234"
+
            
         '''
     }
