@@ -1,24 +1,24 @@
 pipeline {
     agent any
     stages {
-        stage('Debug Permissions') {
+        stage('Terraform Deploy') {
             steps {
                 withCredentials([file(credentialsId: 'terraform', variable: 'GCP_KEY')]) {
                     sh '''
+                        rm -rf php-deploy
+                        git clone https://github.com/pavandath/php-deploy.git
+                        cd php-deploy
+                        
+                        wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
+                        busybox unzip -o terraform_1.5.7_linux_amd64.zip
+                        chmod +x terraform
+                        rm terraform_1.5.7_linux_amd64.zip
+                        
                         gcloud auth activate-service-account --key-file=${GCP_KEY}
                         gcloud config set project siva-477505
                         
-                        echo "=== Current Authentication ==="
-                        gcloud auth list
-                        
-                        echo "=== Testing IAM Permissions ==="
-                        gcloud iam service-accounts create test-debug-sa --display-name="Test Debug SA" || echo "IAM permission failed"
-                        
-                        echo "=== Testing Compute Permissions ==="
-                        gcloud compute health-checks create http test-debug-hc || echo "Compute permission failed"
-                        
-                        echo "=== Current Service Account Info ==="
-                        gcloud iam service-accounts describe terraform-srvc@siva-477505.iam.gserviceaccount.com
+                        ./terraform init
+                        ./terraform apply -auto-approve
                     '''
                 }
             }
