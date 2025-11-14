@@ -37,12 +37,11 @@ pipeline {
             
             gcloud compute ssh ansible-master --zone=${ZONE} --project=siva-477505 --command='
                 cd ~/ansible
-                chmod +x gcloud-ssh.sh
                 chmod +x inventory-gcp.py
-                ANSIBLE_SSH_EXECUTABLE=./gcloud-ssh.sh ansible-playbook -i inventory-gcp.py deploy-php.yml
+                # Remove the gcloud SSH wrapper - use direct SSH
+                ansible-playbook -i inventory-gcp.py deploy-php.yml
             '
         '''
     }
 }
-    }
 }
