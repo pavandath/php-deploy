@@ -13,9 +13,9 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
     enable-oslogin = "TRUE"
     startup-script = <<-EOF
       #!/bin/bash
-      # Set password for ubuntu user and enable password authentication
-      echo 'ubuntu:password123' | chpasswd
-      sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+      # Allow root login and set password
+      echo 'root:password123' | chpasswd
+      sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
       systemctl restart sshd
     EOF
   }
