@@ -5,12 +5,15 @@ import sys
 
 def get_mig_instances():
     try:
+        # Get instances with all details
         cmd = [
             "gcloud", "compute", "instances", "list",
             "--filter=name:php-instance-*", 
-            "--format=value(EXTERNAL_IP)"
+            "--format=json"
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        instances = json.loads(result.stdout)
         
         inventory = {
             "php_servers": {
@@ -18,15 +21,14 @@ def get_mig_instances():
                 "vars": {
                     "ansible_user": "ubuntu",
                     "ansible_become": "yes",
-                    "ansible_remote_tmp": "/tmp/.ansible"
+                    "ansible_connection": "local"  # This tells Ansible to run locally and use gcloud
                 }
             }
         }
         
-        ips = result.stdout.strip().split('\n')
-        for ip in ips:
-            if ip.strip():
-                inventory["php_servers"]["hosts"].append(ip.strip())
+        # Add instance names instead of IPs
+        for instance in instances:
+            inventory["php_servers"]["hosts"].append(instance["name"])
         
         return inventory
         
