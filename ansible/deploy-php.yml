@@ -1,44 +1,26 @@
 ---
 - name: Deploy PHP Application on MIG
-  hosts: php_servers
-  become: yes
-  
+  hosts: localhost
+  connection: local
   tasks:
-    - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
-        update_cache: yes
-
-    - name: Start and enable Docker service
-      systemd:
-        name: docker
-        state: started
-        enabled: yes
-
-    - name: Stop and remove existing php-app container
+    - name: Get PHP instances
       shell: |
-        docker stop php-app || true
-        docker rm php-app || true
+        gcloud compute instances list --filter="name:php-instance-*" --format="json"
+      register: instances_json
 
-    - name: Configure Docker with Artifact Registry
-      command: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
-
-    - name: Pull PHP application image
-      shell: docker pull us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
-
-    - name: Run PHP application container
+    - name: Deploy to each PHP instance using gcloud SSH
       shell: |
-        docker run -d \
-          --name php-app \
-          --restart unless-stopped \
-          -p 80:80 \
-          us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
-
-    - name: Verify container is running
-      shell: docker ps
-      register: container_status
-
-    - name: Show container status
-      debug:
-        var: container_status.stdout
+        gcloud compute ssh {{ item.name }} --zone={{ item.zone }} --command="
+          sudo apt-get update -y
+          sudo apt-get install -y docker.io
+          sudo systemctl enable docker
+          sudo systemctl start docker
+          sudo docker stop php-app || true
+          sudo docker rm php-app || true
+          sudo docker pull us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
+          sudo docker run -d --name php-app -p 80:80 --restart unless-stopped us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
+          echo 'Deployment completed on {{ item.name }}'
+        "
+      loop: "{{ instances_json.stdout | from_json }}"
+      loop_control:
+        label: "{{ item.name }}"
