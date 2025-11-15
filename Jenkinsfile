@@ -23,32 +23,33 @@ pipeline {
             }
         }
         
-        stage('User Input') {
-            steps {
-                script {
-                    def userInput = input(
-                        message: 'Choose action:', 
-                        parameters: [
-                            choice(choices: ['apply', 'destroy'], description: 'Select Terraform action', name: 'ACTION')
-                        ]
-                    )
-                    env.TF_ACTION = userInput
-                }
-            }
-        }
-        
-        stage('Terraform Action') {
+        stage('terraform apply') {
             steps {
                 dir('php-deploy') {
                     sh '''
                         export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
                         ./terraform init
+                        ./terraform apply -auto-approve -lock=false
                     '''
-                    script {
-                        if (env.TF_ACTION == 'destroy') {
-                            sh './terraform destroy -auto-approve'
-                        } else {
-                            sh './terraform apply -auto-approve'
+                }
+            }
+        }
+        
+        stage('Destroy Confirmation') {
+            steps {
+                script {
+                    def destroy = input(
+                        message: 'Do you want to destroy the infrastructure?', 
+                        parameters: [
+                            choice(choices: ['no', 'yes'], description: 'Select action', name: 'DESTROY')
+                        ]
+                    )
+                    if (destroy == 'yes') {
+                        dir('php-deploy') {
+                            sh '''
+                                export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
+                                ./terraform destroy -auto-approve -lock=false
+                            '''
                         }
                     }
                 }
