@@ -23,7 +23,6 @@ resource "google_project_iam_member" "instance_sa_compute_admin" {
   member  = "serviceAccount:${google_service_account.instance_sa.email}"
 }
 
-# ADD THESE TWO EXTRA ROLES:
 resource "google_project_iam_member" "instance_sa_service_account_user" {
   project = var.project
   role    = "roles/iam.serviceAccountUser"
@@ -33,5 +32,18 @@ resource "google_project_iam_member" "instance_sa_service_account_user" {
 resource "google_project_iam_member" "instance_sa_compute_viewer" {
   project = var.project
   role    = "roles/compute.viewer"
+  member  = "serviceAccount:${google_service_account.instance_sa.email}"
+}
+
+# ADD THESE STORAGE ROLES:
+resource "google_project_iam_member" "instance_sa_storage_object_admin" {
+  project = var.project
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.instance_sa.email}"
+}
+
+resource "google_project_iam_member" "instance_sa_storage_viewer" {
+  project = var.project
+  role    = "roles/storage.objectViewer"
   member  = "serviceAccount:${google_service_account.instance_sa.email}"
 }
