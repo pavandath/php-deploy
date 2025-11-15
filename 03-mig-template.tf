@@ -13,13 +13,11 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
     enable-oslogin = "TRUE"
     startup-script = <<-EOF
       #!/bin/bash
-      # Install Docker (if not already installed)
-      if ! command -v docker &> /dev/null; then
-        apt update -y
-        apt install docker.io -y
-        systemctl enable docker
-        systemctl start docker
-      fi
+      # Install Docker
+      apt update -y
+      apt install docker.io -y
+      systemctl enable docker
+      systemctl start docker
       
       # Authenticate Docker with Artifact Registry
       gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
@@ -31,7 +29,10 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
       # Pull and run PHP application container
       docker run -d --name php-app -p 80:80 --restart unless-stopped us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
       
-      echo "PHP application deployed successfully"
+      # Setup log backup to GCS (runs every hour)
+      echo "0 * * * * docker logs php-app --timestamps > /tmp/php-app.log && gsutil cp /tmp/php-app.log gs://pavan-gcs/php-logs/$(hostname)-$(date +%Y%m%d-%H%M%S).log" | crontab -
+      
+      echo "PHP application deployed successfully - logs will be saved to GCS"
     EOF
   }
 
