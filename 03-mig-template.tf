@@ -19,20 +19,27 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
       systemctl enable docker
       systemctl start docker
       
-      # Authenticate Docker with Artifact Registry
+      # Authenticate Docker
       gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
       
-      # Stop and remove existing container if it exists
+      # Stop and remove existing container
       docker stop php-app || true
       docker rm php-app || true
       
-      # Pull and run PHP application container
+      # Run container
       docker run -d --name php-app -p 80:80 --restart unless-stopped us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
       
-      # Setup log backup to GCS (runs every hour)
-      echo "0 * * * * docker logs php-app --timestamps > /tmp/php-app.log && gsutil cp /tmp/php-app.log gs://pavan-gcs/php-logs/$(hostname)-$(date +%Y%m%d-%H%M%S).log" | crontab -
+      # Wait a bit for container to start
+      sleep 10
       
-      echo "PHP application deployed successfully - logs will be saved to GCS"
+      # Generate FIRST LOG immediately for verification
+      docker logs php-app > /tmp/first-log.txt
+      gsutil cp /tmp/first-log.txt gs://pavan-gcs/php-logs/$(hostname)-first.log
+      
+      # Setup log upload every 10 minutes
+      echo "*/10 * * * * docker logs php-app --since 10m > /tmp/php-logs.txt && gsutil cp /tmp/php-logs.txt gs://pavan-gcs/php-logs/$(hostname)-\\$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log" | crontab -
+      
+      echo "Container running - first log uploaded for verification"
     EOF
   }
 
