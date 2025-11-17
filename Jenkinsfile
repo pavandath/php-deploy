@@ -24,7 +24,7 @@ pipeline {
                 dir('php-deploy') {
                     sh '''
                         ./terraform init
-                        ./terraform apply -auto-approve
+                        ./terraform apply -auto-approve -lock=false
                     '''
                 }
             }
@@ -51,7 +51,7 @@ pipeline {
             steps {
                 dir('php-deploy') {
                     sh '''
-                        ./terraform destroy -auto-approve
+                        ./terraform destroy -auto-approve -lock=false
                     '''
                 }
             }
