@@ -8,14 +8,35 @@ pipeline {
         GAR_REPO = "siva-477505/php-app"
     }
 
+    triggers {
+        githubPush()
+    }
+
     stages {
-        stage('Checkout Code') {
+        stage('Check for Docker Changes') {
             steps {
-                git branch: 'main', url: 'https://github.com/pavandath/php-deploy.git'
+                script {
+                    def changes = sh(
+                        script: "git diff --name-only HEAD~1 HEAD | grep -E '(Dockerfile|app/)' || true",
+                        returnStdout: true
+                    ).trim()
+                    
+                    if (changes) {
+                        env.BUILD_AND_DEPLOY = "true"
+                        echo "Docker changes detected: ${changes}. Will build and deploy."
+                    } else {
+                        env.BUILD_AND_DEPLOY = "false"
+                        currentBuild.result = 'SUCCESS'
+                        error('No Docker changes - skipping build and deploy')
+                    }
+                }
             }
         }
         
         stage('Build and Push Docker') {
+            when {
+                expression { env.BUILD_AND_DEPLOY == "true" }
+            }
             steps {
                 dir('app') {
                     sh '''
@@ -27,23 +48,16 @@ pipeline {
             }
         }
         
-        stage('Clean and Setup Terraform') {
-            steps {
-                sh '''
-                    rm -rf .terraform terraform.tfstate* .terraform.lock.hcl
-                    wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
-                    busybox unzip -o terraform_1.5.7_linux_amd64.zip
-                    chmod +x terraform
-                    rm terraform_1.5.7_linux_amd64.zip
-                '''
+        stage('Rollout to MIG') {
+            when {
+                expression { env.BUILD_AND_DEPLOY == "true" }
             }
-        }
-        
-        stage('Deploy with Terraform') {
             steps {
                 sh '''
-                    ./terraform init
-                    ./terraform apply -replace="google_compute_region_instance_group_manager.php_mig" -auto-approve || true
+                    # Update MIG instances with new container
+                    gcloud compute instance-groups managed rolling-action start-update php-mig \
+                        --region=us-central1 \
+                        --max-unavailable=0 || true
                 '''
             }
         }
