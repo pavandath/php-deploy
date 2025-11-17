@@ -1,10 +1,6 @@
 pipeline {
     agent any
     
-    environment {
-        GCP_KEY = credentials('terraform')
-    }
-
     stages {
         stage('Terraform install') {
             steps {
@@ -27,9 +23,8 @@ pipeline {
             steps {
                 dir('php-deploy') {
                     sh '''
-                        export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
                         ./terraform init
-                        ./terraform apply -auto-approve -lock=false
+                        ./terraform apply -auto-approve
                     '''
                 }
             }
@@ -37,23 +32,35 @@ pipeline {
         
         stage('Destroy Confirmation') {
             steps {
-                script {
-                    def destroy = input(
-                        message: 'Do you want to destroy the infrastructure?', 
-                        parameters: [
-                            choice(choices: ['no', 'yes'], description: 'Select action', name: 'DESTROY')
-                        ]
-                    )
-                    if (destroy == 'yes') {
-                        dir('php-deploy') {
-                            sh '''
-                                export GOOGLE_APPLICATION_CREDENTIALS=${GCP_KEY}
-                                ./terraform destroy -auto-approve -lock=false
-                            '''
-                        }
-                    }
+                input(
+                    message: 'Do you want to destroy the infrastructure?', 
+                    ok: 'Proceed',
+                    parameters: [
+                        choice(choices: ['no', 'yes'], description: 'Select action', name: 'DESTROY')
+                    ]
+                )
+            }
+        }
+        
+        stage('Terraform Destroy') {
+            when {
+                expression { 
+                    env.DESTROY == 'yes'
                 }
             }
+            steps {
+                dir('php-deploy') {
+                    sh '''
+                        ./terraform destroy -auto-approve
+                    '''
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo "Pipeline completed successfully"
         }
     }
 }
