@@ -11,9 +11,8 @@ resource "google_compute_region_instance_group_manager" "php_mig" {
     minimal_action        = "REPLACE"
     max_surge_fixed       = 3
     max_unavailable_fixed = 0
-    min_ready_sec         = 60
+   
   }
-
   target_size = 1
 
 
