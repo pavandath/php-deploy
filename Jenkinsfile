@@ -41,8 +41,8 @@ pipeline {
         stage('Terraform Deploy') {
             steps {
                 sh '''
-                    ./terraform init -input=false -reconfigure
-                    ./terraform apply -auto-approve -input=false
+                    ./terraform init  -reconfigure
+                    ./terraform apply -auto-approve 
                 '''
             }
         }
@@ -67,7 +67,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    ./terraform destroy -auto-approve -input=false
+                    ./terraform destroy -auto-approve
                 '''
             }
         }
