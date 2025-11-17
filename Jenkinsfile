@@ -59,18 +59,18 @@ pipeline {
             }
         }
         
-        stage('Terraform Destroy') {
-            when {
-                expression { 
-                    env.DESTROY == 'yes'
-                }
-            }
-            steps {
-                sh '''
-                    ./terraform destroy -auto-approve
-                '''
-            }
+       stage('Terraform Destroy') {
+    when {
+        expression { 
+            params.DESTROY == 'yes'
         }
+    }
+    steps {
+        sh '''
+            ./terraform destroy -auto-approve
+        '''
+    }
+}
     }
     
     post {
