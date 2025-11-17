@@ -8,35 +8,25 @@ pipeline {
         GAR_REPO = "siva-477505/php-app"
     }
 
-    triggers {
-        githubPush()
-    }
-
     stages {
-        stage('Check for Docker Changes') {
+        stage('Checkout Code') {
             steps {
-                script {
-                    def changes = sh(
-                        script: "git diff --name-only HEAD~1 HEAD | grep -E '(Dockerfile|app/)' || true",
-                        returnStdout: true
-                    ).trim()
-                    
-                    if (changes) {
-                        env.BUILD_AND_DEPLOY = "true"
-                        echo "Docker changes detected: ${changes}. Will build and deploy."
-                    } else {
-                        env.BUILD_AND_DEPLOY = "false"
-                        currentBuild.result = 'SUCCESS'
-                        error('No Docker changes - skipping build and deploy')
-                    }
-                }
+                git branch: 'main', url: 'https://github.com/pavandath/php-deploy.git'
+            }
+        }
+        
+        stage('Terraform Install') {
+            steps {
+                sh '''
+                    wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
+                    busybox unzip -o terraform_1.5.7_linux_amd64.zip
+                    chmod +x terraform
+                    rm terraform_1.5.7_linux_amd64.zip
+                '''
             }
         }
         
         stage('Build and Push Docker') {
-            when {
-                expression { env.BUILD_AND_DEPLOY == "true" }
-            }
             steps {
                 dir('app') {
                     sh '''
@@ -48,16 +38,36 @@ pipeline {
             }
         }
         
-        stage('Rollout to MIG') {
+        stage('Terraform Init & Apply') {
+            steps {
+                sh '''
+                    ./terraform init -reconfigure
+                    ./terraform apply -auto-approve
+                '''
+            }
+        }
+        
+        stage('Destroy Confirmation') {
+            steps {
+                input(
+                    message: 'Do you want to destroy the infrastructure?', 
+                    ok: 'Proceed',
+                    parameters: [
+                        choice(choices: ['no', 'yes'], description: 'Select action', name: 'DESTROY')
+                    ]
+                )
+            }
+        }
+        
+        stage('Terraform Destroy') {
             when {
-                expression { env.BUILD_AND_DEPLOY == "true" }
+                expression { 
+                    env.DESTROY == 'yes'
+                }
             }
             steps {
                 sh '''
-                    # Update MIG instances with new container
-                    gcloud compute instance-groups managed rolling-action start-update php-mig \
-                        --region=us-central1 \
-                        --max-unavailable=0 || true
+                    ./terraform destroy -auto-approve
                 '''
             }
         }
@@ -65,7 +75,7 @@ pipeline {
     
     post {
         always {
-            echo "Pipeline completed"
+            echo "Pipeline completed successfully"
         }
     }
 }
