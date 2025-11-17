@@ -9,13 +9,13 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Terraform and App Code') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/pavandath/php-deploy.git'
             }
         }
         
-        stage('Build and Push to GAR') {
+        stage('Build and Push Docker') {
             steps {
                 dir('app') {
                     sh '''
@@ -27,55 +27,41 @@ pipeline {
             }
         }
         
-        stage('Terraform Install') {
+        stage('Deploy with Terraform') {
             steps {
                 sh '''
                     wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
                     busybox unzip -o terraform_1.5.7_linux_amd64.zip
                     chmod +x terraform
                     rm terraform_1.5.7_linux_amd64.zip
+                    
+                    ./terraform init
+                    ./terraform apply -auto-approve
                 '''
             }
         }
         
-        stage('Terraform Deploy') {
-            steps {
-                sh '''
-                    ./terraform init  -reconfigure
-                    ./terraform apply -auto-approve 
-                '''
-            }
-        }
-        
-        stage('Destroy Confirmation') {
+        stage('Destroy Infrastructure') {
             steps {
                 input(
-                    message: 'Do you want to destroy the infrastructure?', 
-                    ok: 'Proceed',
+                    message: 'Do you want to destroy everything?', 
+                    ok: 'Destroy',
                     parameters: [
-                        choice(choices: ['no', 'yes'], description: 'Select action', name: 'DESTROY')
+                        choice(choices: ['no', 'yes'], description: 'Confirm destruction', name: 'DESTROY')
                     ]
                 )
-            }
-        }
-        
-        stage('Terraform Destroy') {
-            when {
-                expression { 
-                    env.DESTROY == 'yes'
+                script {
+                    if (params.DESTROY == 'yes') {
+                        sh './terraform destroy -auto-approve'
+                    }
                 }
-            }
-            steps {
-                sh '''
-                    ./terraform destroy -auto-approve
-                '''
             }
         }
     }
     
     post {
         always {
-            echo "Pipeline completed successfully"
+            echo "Pipeline completed"
         }
     }
 }
