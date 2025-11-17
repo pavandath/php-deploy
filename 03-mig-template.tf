@@ -1,6 +1,6 @@
 resource "google_compute_instance_template" "php_template_ubuntu" {
   name_prefix  = "php-ub-template-"
-  machine_type = "e2-medium"
+  machine_type = var.machine_type
 
   disk {
     boot = true
@@ -26,18 +26,18 @@ resource "google_compute_instance_template" "php_template_ubuntu" {
       docker stop php-app || true
       docker rm php-app || true
       
-      # Run container
-      docker run -d --name php-app -p 80:80 --restart unless-stopped us-central1-docker.pkg.dev/siva-477505/php-app/php-app:v1
+      # Run container with variable image URI
+      docker run -d --name php-app -p 80:80 --restart unless-stopped ${var.image_uri}
       
       # Wait a bit for container to start
       sleep 10
       
       # Generate FIRST LOG immediately for verification
       docker logs php-app > /tmp/first-log.txt
-      gsutil cp /tmp/first-log.txt gs://pavan-gcs/php-logs/$(hostname)-first.log
+      gsutil cp /tmp/first-log.txt gs://${var.gcs_ansible_bucket}/php-logs/$(hostname)-first.log
       
       # Setup log upload every 10 minutes
-      echo "*/10 * * * * docker logs php-app --since 10m > /tmp/php-logs.txt && gsutil cp /tmp/php-logs.txt gs://pavan-gcs/php-logs/$(hostname)-\\$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log" | crontab -
+      echo "*/10 * * * * docker logs php-app --since 10m > /tmp/php-logs.txt && gsutil cp /tmp/php-logs.txt gs://${var.gcs_ansible_bucket}/php-logs/$(hostname)-\\$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log" | crontab -
       
       echo "Container running - first log uploaded for verification"
     EOF
