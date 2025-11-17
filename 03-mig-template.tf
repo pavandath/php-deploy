@@ -1,34 +1,45 @@
-resource "google_compute_instance_template" "php_template_cos" {
-  name_prefix  = "php-cos-template-"
+resource "google_compute_instance_template" "php_template_ubuntu" {
+  name_prefix  = "php-ub-template-"
   machine_type = var.machine_type
 
   disk {
     boot = true
     auto_delete = true
-    source_image = "projects/cos-cloud/global/images/family/cos-stable"
+    source_image = "projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts"
     disk_size_gb = 10
   }
 
   metadata = {
     enable-oslogin = "TRUE"
-    google-logging-enabled = "true"
-    google-monitoring-enabled = "true"
     startup-script = <<-EOF
       #!/bin/bash
+      # Install Docker
+      apt update -y
+      apt install docker.io -y
+      systemctl enable docker
+      systemctl start docker
+      
       # Authenticate Docker with GAR
-      docker-credential-gcr configure-docker --registries=us-central1-docker.pkg.dev
+      gcloud auth configure-docker us-central1-docker.pkg.dev
       
       # Stop and remove existing container
       docker stop php-app || true
       docker rm php-app || true
       
       # Run container
-      docker run -d --name php-app -p 80:80 --restart unless-stopped ${var.image_uri}
+      docker run -d --name php-app -p 80:80 --restart unless-stopped us-central1-docker.pkg.dev/siva-477505/php-app/php-app:latest
+      
+      # Wait a bit for container to start
+      sleep 10
+      
+      # Generate FIRST LOG immediately for verification
+      docker logs php-app > /tmp/first-log.txt
+      gsutil cp /tmp/first-log.txt gs://${var.gcs_ansible_bucket}/php-logs/$(hostname)-first.log
       
       # Setup log upload every 10 minutes
-      echo "*/10 * * * * docker logs php-app --since 10m > /tmp/php-logs.txt && gsutil cp /tmp/php-logs.txt gs://${var.gcs_ansible_bucket}/php-logs/\\$(hostname)-\\$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log" | crontab -
+      echo "*/10 * * * * docker logs php-app --since 10m > /tmp/php-logs.txt && gsutil cp /tmp/php-logs.txt gs://${var.gcs_ansible_bucket}/php-logs/$(hostname)-\\$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log" | crontab -
       
-      echo "Container deployed on COS"
+      echo "Container running - first log uploaded for verification"
     EOF
   }
 
