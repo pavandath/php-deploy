@@ -1,27 +1,25 @@
 resource "google_compute_region_instance_group_manager" "php_mig" {
   name               = "php-mig"
   base_instance_name = "php-instance"
-  region             = "us-central1"
+  region             = var.region
+  target_size        = var.instance_count
 
   version {
-    instance_template = google_compute_instance_template.php_template_ubuntu.id
+    instance_template = google_compute_instance_template.php_template_cos.id
   }
+
   update_policy {
     type                  = "PROACTIVE"
     minimal_action        = "REPLACE"
     max_surge_fixed       = 3
     max_unavailable_fixed = 0
-   
   }
-  target_size = 1
-
 
   named_port {
     name = "http"
     port = 80
   }
 }
-
 resource "google_compute_region_autoscaler" "php_autoscaler" {
   name   = "php-autoscaler"
   region = var.region
