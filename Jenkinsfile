@@ -5,23 +5,35 @@ pipeline {
         GCP_KEY = credentials('terraform')
         GOOGLE_APPLICATION_CREDENTIALS = "${GCP_KEY}"
         GAR_LOCATION = "us-central1"
-        GAR_REPO = "siva-477505/php-app"  // Your GAR repo
-        APP_REPO = "https://github.com/your-username/your-php-app-repo.git"  // Update with your PHP app repo
+        GAR_REPO = "siva-477505/php-app"
     }
 
     stages {
-        stage('Checkout App Code') {
+        stage('Checkout Terraform and App Code') {
             steps {
-                git branch: 'main', url: "${APP_REPO}"
+                git branch: 'main', url: 'https://github.com/pavandath/php-deploy.git'
             }
         }
         
         stage('Build and Push to GAR') {
             steps {
+                dir('app') {  // Navigate to app directory
+                    sh '''
+                        docker build -t ${GAR_LOCATION}-docker.pkg.dev/${GAR_REPO}/php-app:latest .
+                        gcloud auth configure-docker ${GAR_LOCATION}-docker.pkg.dev
+                        docker push ${GAR_LOCATION}-docker.pkg.dev/${GAR_REPO}/php-app:latest
+                    '''
+                }
+            }
+        }
+        
+        stage('Terraform Install') {
+            steps {
                 sh '''
-                    docker build -t ${GAR_LOCATION}-docker.pkg.dev/${GAR_REPO}/php-app:latest .
-                    gcloud auth configure-docker ${GAR_LOCATION}-docker.pkg.dev
-                    docker push ${GAR_LOCATION}-docker.pkg.dev/${GAR_REPO}/php-app:latest
+                    wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
+                    busybox unzip -o terraform_1.5.7_linux_amd64.zip
+                    chmod +x terraform
+                    rm terraform_1.5.7_linux_amd64.zip
                 '''
             }
         }
@@ -29,23 +41,9 @@ pipeline {
         stage('Terraform Deploy') {
             steps {
                 sh '''
-                    rm -rf php-deploy
-                    git clone https://github.com/pavandath/php-deploy.git || true
+                    ./terraform init
+                    ./terraform apply -auto-approve -lock=false
                 '''
-                dir('php-deploy'){  
-                    sh '''
-                        wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
-                        busybox unzip -o terraform_1.5.7_linux_amd64.zip
-                        chmod +x terraform
-                        rm terraform_1.5.7_linux_amd64.zip
-                    '''
-                }
-                dir('php-deploy') {
-                    sh '''
-                        ./terraform init
-                        ./terraform apply -auto-approve -lock=false
-                    '''
-                }
             }
         }
         
@@ -68,11 +66,9 @@ pipeline {
                 }
             }
             steps {
-                dir('php-deploy') {
-                    sh '''
-                        ./terraform destroy -auto-approve -lock=false
-                    '''
-                }
+                sh '''
+                    ./terraform destroy -auto-approve -lock=false
+                '''
             }
         }
     }
