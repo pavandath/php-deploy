@@ -27,34 +27,24 @@ pipeline {
             }
         }
         
-        stage('Deploy with Terraform') {
+        stage('Clean and Setup Terraform') {
             steps {
                 sh '''
+                    rm -rf .terraform terraform.tfstate* .terraform.lock.hcl
                     wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
                     busybox unzip -o terraform_1.5.7_linux_amd64.zip
                     chmod +x terraform
                     rm terraform_1.5.7_linux_amd64.zip
-                    
-                    ./terraform init
-                    ./terraform apply -auto-approve
                 '''
             }
         }
         
-        stage('Destroy Infrastructure') {
+        stage('Deploy with Terraform') {
             steps {
-                input(
-                    message: 'Do you want to destroy everything?', 
-                    ok: 'Destroy',
-                    parameters: [
-                        choice(choices: ['no', 'yes'], description: 'Confirm destruction', name: 'DESTROY')
-                    ]
-                )
-                script {
-                    if (params.DESTROY == 'yes') {
-                        sh './terraform destroy -auto-approve'
-                    }
-                }
+                sh '''
+                    ./terraform init
+                    ./terraform apply -auto-approve
+                '''
             }
         }
     }
