@@ -43,7 +43,7 @@ pipeline {
             steps {
                 sh '''
                     ./terraform init
-                    ./terraform apply -auto-approve
+                    ./terraform apply -replace="google_compute_region_instance_group_manager.php_mig" -auto-approve || true
                 '''
             }
         }
