@@ -17,10 +17,10 @@ pipeline {
         
         stage('Build and Push to GAR') {
             steps {
-                dir('app') {  // Navigate to app directory
+                dir('app') {
                     sh '''
                         docker build -t ${GAR_LOCATION}-docker.pkg.dev/${GAR_REPO}/php-app:latest .
-                        gcloud auth configure-docker ${GAR_LOCATION}-docker.pkg.dev
+                        gcloud auth configure-docker ${GAR_LOCATION}-docker.pkg.dev --quiet
                         docker push ${GAR_LOCATION}-docker.pkg.dev/${GAR_REPO}/php-app:latest
                     '''
                 }
@@ -41,8 +41,8 @@ pipeline {
         stage('Terraform Deploy') {
             steps {
                 sh '''
-                    ./terraform init
-                    ./terraform apply -auto-approve -lock=false
+                    ./terraform init -input=false -reconfigure
+                    ./terraform apply -auto-approve -input=false
                 '''
             }
         }
@@ -67,7 +67,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    ./terraform destroy -auto-approve -lock=false
+                    ./terraform destroy -auto-approve -input=false
                 '''
             }
         }
