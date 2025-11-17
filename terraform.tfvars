@@ -3,7 +3,7 @@ project = "siva-477505"
 region = "us-central1"
 zone   = "us-central1-a"
 
-image_uri = "us-central1-docker.pkg.dev/siva-477505/php-repo/php-app:v1"
+image_uri = "us-central1-docker.pkg.dev/siva-477505/php-repo/php-app:latest"
 
 gcs_ansible_bucket     = "my-ansible-playbook-bucket"
 # gcs_ansible_log_bucket = "my-ansible-log-bucket"
