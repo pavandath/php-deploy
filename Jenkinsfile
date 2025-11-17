@@ -49,28 +49,29 @@ pipeline {
         
         stage('Destroy Confirmation') {
             steps {
-                input(
-                    message: 'Do you want to destroy the infrastructure?', 
-                    ok: 'Proceed',
-                    parameters: [
-                        choice(choices: ['no', 'yes'], description: 'Select action', name: 'DESTROY')
-                    ]
-                )
+                script {
+                    env.DESTROY = input(
+                        message: 'Do you want to destroy the infrastructure?', 
+                        parameters: [
+                            choice(choices: ['no', 'yes'], description: 'Select action', name: 'DESTROY')
+                        ]
+                    )
+                }
             }
         }
         
-       stage('Terraform Destroy') {
-    when {
-        expression { 
-            params.DESTROY == 'yes'
+        stage('Terraform Destroy') {
+            when {
+                expression { 
+                    env.DESTROY == 'yes'
+                }
+            }
+            steps {
+                sh '''
+                    ./terraform destroy -auto-approve
+                '''
+            }
         }
-    }
-    steps {
-        sh '''
-            ./terraform destroy -auto-approve
-        '''
-    }
-}
     }
     
     post {
