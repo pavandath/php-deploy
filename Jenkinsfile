@@ -1,6 +1,11 @@
 pipeline {
     agent any
     
+    environment {
+        GCP_KEY = credentials('terraform')
+        GOOGLE_APPLICATION_CREDENTIALS = "${GCP_KEY}"
+    }
+
     stages {
         stage('Terraform install') {
             steps {
