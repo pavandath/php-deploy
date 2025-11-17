@@ -21,15 +21,7 @@ variable "image_uri" {
   type        = string
 }
 
-variable "gcs_ansible_bucket" {
-  description = "GCS bucket where Ansible playbooks are stored"
-  type        = string
-}
 
-# variable "gcs_ansible_log_bucket" {
-#   description = "GCS bucket where startup-script uploads logs"
-#   type        = string
-# }
 
 variable "instance_count" {
   description = "Initial VM count in the MIG"
