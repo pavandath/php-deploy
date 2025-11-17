@@ -5,7 +5,7 @@ resource "google_compute_region_instance_group_manager" "php_mig" {
   target_size        = var.instance_count
 
   version {
-    instance_template = google_compute_instance_template.php_template_cos.id
+    instance_template =  google_compute_instance_template.php_template_ubuntu.id
   }
 
   update_policy {
