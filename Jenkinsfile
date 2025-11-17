@@ -4,10 +4,29 @@ pipeline {
     environment {
         GCP_KEY = credentials('terraform')
         GOOGLE_APPLICATION_CREDENTIALS = "${GCP_KEY}"
+        GAR_LOCATION = "us-central1"
+        GAR_REPO = "siva-477505/php-app"  // Your GAR repo
+        APP_REPO = "https://github.com/your-username/your-php-app-repo.git"  // Update with your PHP app repo
     }
 
     stages {
-        stage('Terraform install') {
+        stage('Checkout App Code') {
+            steps {
+                git branch: 'main', url: "${APP_REPO}"
+            }
+        }
+        
+        stage('Build and Push to GAR') {
+            steps {
+                sh '''
+                    docker build -t ${GAR_LOCATION}-docker.pkg.dev/${GAR_REPO}/php-app:latest .
+                    gcloud auth configure-docker ${GAR_LOCATION}-docker.pkg.dev
+                    docker push ${GAR_LOCATION}-docker.pkg.dev/${GAR_REPO}/php-app:latest
+                '''
+            }
+        }
+        
+        stage('Terraform Deploy') {
             steps {
                 sh '''
                     rm -rf php-deploy
@@ -21,11 +40,6 @@ pipeline {
                         rm terraform_1.5.7_linux_amd64.zip
                     '''
                 }
-            }
-        }
-        
-        stage('terraform apply') {
-            steps {
                 dir('php-deploy') {
                     sh '''
                         ./terraform init
