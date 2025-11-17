@@ -9,13 +9,6 @@ resource "google_compute_region_instance_group_manager" "php_mig" {
 
   target_size = 1
 
-  update_policy {
-    type                         = "OPPORTUNISTIC"  
-    minimal_action               = "REPLACE"
-    max_surge_fixed              = 3                
-    max_unavailable_fixed        = 3                
-    replacement_method           = "SUBSTITUTE"     
-  }
 
   named_port {
     name = "http"
